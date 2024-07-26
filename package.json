@@ -6,7 +6,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/NeoRu4/prettier-plugin-jinja-json-template"
+    "url": "git+https://github.com/NeoRu4/prettier-plugin-jinja-json-template.git"
   },
   "bugs": {
     "url": "https://github.com/NeoRu4/prettier-plugin-jinja-json-template/issues"
