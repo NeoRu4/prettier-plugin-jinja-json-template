@@ -1,227 +1,197 @@
 import { Parser } from "prettier";
-import {
-	Delimiter,
-	Node,
-	Placeholder,
-	Expression,
-	Statement,
-	Block,
-} from "./jinja";
+import { Block, Expression, Node, Statement } from "./types";
+import { placeholderGenerator, replaceAt } from "./utils/placeholder-generator";
+import { NOT_FOUND } from "./constants";
 
-const NOT_FOUND = -1;
+const STYLE = "jinja" as const;
 
 const regex =
-	/(?<node>{{(?<startDelimiterEx>[-+]?)\s*(?<expression>'([^']|\\')*'|"([^"]|\\")*"|[\S\s]*?)\s*(?<endDelimiterEx>[-+]?)}}|{%(?<startDelimiter>[-+]?)\s*(?<statement>(?<keyword>\w+)('([^']|\\')*'|"([^"]|\\")*"|[\S\s])*?)\s*(?<endDelimiter>[-+]?)%}|(?<comment>{#[\S\s]*?#})|(?<scriptBlock><(script)((?!<)[\s\S])*>((?!<\/script)[\s\S])*?{{[\s\S]*?<\/(script)>)|(?<styleBlock><(style)((?!<)[\s\S])*>((?!<\/style)[\s\S])*?{{[\s\S]*?<\/(style)>)|(?<ignoreBlock><!-- prettier-ignore-start -->[\s\S]*<!-- prettier-ignore-end -->))/;
+  /(?<node>{{(?<startDelimiterEx>[-+]?)\s*(?<expression>'([^']|\\')*'|"([^"]|\\")*"|[\S\s]*?)\s*(?<endDelimiterEx>[-+]?)}}|{%(?<startDelimiter>[-+]?)\s*(?<statement>(?<keyword>\w+)('([^']|\\')*'|"([^"]|\\")*"|[\S\s])*?)\s*(?<endDelimiter>[-+]?)%}|(?<comment>{#[\S\s]*?#}))/;
 
 export const parse: Parser<Node>["parse"] = (text) => {
-	const statementStack: Statement[] = [];
+  const statementStack: Statement[] = [];
 
-	const root: Node = {
-		id: "0",
-		type: "root" as const,
-		content: text,
-		preNewLines: 0,
-		originalText: text,
-		index: 0,
-		length: 0,
-		nodes: {},
-	};
+  const root: Node = {
+    id: "0",
+    type: "root" as const,
+    content: text,
+    preNewLines: 0,
+    originalText: text,
+    index: 0,
+    length: 0,
+    nodes: {},
+  };
 
-	const generatePlaceholder = placeholderGenerator(text);
+  const generatePlaceholder = placeholderGenerator(text, STYLE);
 
-	let match;
-	let i = 0;
-	while ((match = root.content.slice(i).match(regex)) !== null) {
-		if (!match.groups || match.index === undefined) {
-			continue;
-		}
-		const matchLength = match[0].length;
+  let match;
+  let i = 0;
+  while ((match = root.content.slice(i).match(regex)) !== null) {
+    if (!match.groups || match.index === undefined) {
+      continue;
+    }
+    const matchLength = match[0].length;
 
-		// skip script and style blocks
-		if (match.groups.scriptBlock || match.groups.styleBlock) {
-			i += match.index + matchLength;
-			continue;
-		}
+    const matchText = match.groups.node;
+    const expression = match.groups.expression;
+    const statement = match.groups.statement;
+    const ignoreBlock = match.groups.ignoreBlock;
+    const comment = match.groups.comment;
 
-		const matchText = match.groups.node;
-		const expression = match.groups.expression;
-		const statement = match.groups.statement;
-		const ignoreBlock = match.groups.ignoreBlock;
-		const comment = match.groups.comment;
+    if (!matchText && !expression && !statement && !ignoreBlock && !comment) {
+      continue;
+    }
 
-		if (!matchText && !expression && !statement && !ignoreBlock && !comment) {
-			continue;
-		}
-		const placeholder = generatePlaceholder();
+    const placeholder = generatePlaceholder();
 
-		const emptyLinesBetween = root.content
-			.slice(i, i + match.index)
-			.match(/^\s+$/) || [""];
-		const preNewLines = emptyLinesBetween.length
-			? emptyLinesBetween[0].split("\n").length - 1
-			: 0;
+    const emptyLinesBetween = root.content
+      .slice(i, i + match.index)
+      .match(/^\s+$/) || [""];
 
-		const node = {
-			id: placeholder,
-			preNewLines,
-			originalText: matchText,
-			index: match.index + i,
-			length: matchText.length,
-			nodes: root.nodes,
-		};
+    const preNewLines = emptyLinesBetween.length
+      ? emptyLinesBetween[0].split("\n").length - 1
+      : 0;
 
-		if (comment != undefined || ignoreBlock != undefined) {
-			root.content = replaceAt(
-				root.content,
-				placeholder,
-				match.index + i,
-				matchLength,
-			);
-			root.nodes[node.id] = {
-				...node,
-				type: comment ? "comment" : "ignore",
-				content: comment || ignoreBlock,
-			};
+    const node = {
+      id: placeholder,
+      preNewLines,
+      originalText: matchText,
+      index: match.index + i,
+      length: matchText.length,
+      nodes: root.nodes,
+    };
 
-			i += match.index + placeholder.length;
-		}
+    if (comment != undefined || ignoreBlock != undefined) {
+      root.content = replaceAt(
+        root.content,
+        placeholder,
+        match.index + i,
+        matchLength,
+      );
+      root.nodes[node.id] = {
+        ...node,
+        type: comment ? "comment" : "ignore",
+        content: comment || ignoreBlock,
+      };
 
-		if (expression != undefined) {
-			const delimiter = {
-				start: match.groups.startDelimiterEx,
-				end: match.groups.endDelimiterEx,
-			};
+      i += match.index + placeholder.length;
+    }
 
-			root.content = replaceAt(
-				root.content,
-				placeholder,
-				match.index + i,
-				matchLength,
-			);
-			root.nodes[node.id] = {
-				...node,
-				type: "expression",
-				content: expression,
-				delimiter,
-			} as Expression;
+    if (expression != undefined) {
+      const delimiter = {
+        start: match.groups.startDelimiterEx,
+        end: match.groups.endDelimiterEx,
+      };
 
-			i += match.index + placeholder.length;
-		}
+      root.content = replaceAt(
+        root.content,
+        placeholder,
+        match.index + i,
+        matchLength,
+      );
+      root.nodes[node.id] = {
+        ...node,
+        type: "expression",
+        content: expression,
+        delimiter,
+      } as Expression;
 
-		if (statement != undefined) {
-			const keyword = match.groups.keyword;
-			const delimiter = {
-				start: match.groups.startDelimiter,
-				end: match.groups.endDelimiter,
-			};
+      i += match.index + placeholder.length;
+    }
 
-			if (keyword.startsWith("end")) {
-				let start: Statement | undefined;
-				while (!start) {
-					start = statementStack.pop();
+    if (statement != undefined) {
+      const keyword = match.groups.keyword;
+      const delimiter = {
+        start: match.groups.startDelimiter,
+        end: match.groups.endDelimiter,
+      };
 
-					if (!start) {
-						throw new Error(
-							`No opening statement found for closing statement "{% ${statement} %}".`,
-						);
-					}
+      if (keyword.startsWith("end")) {
+        let start: Statement | undefined;
+        while (!start) {
+          start = statementStack.pop();
 
-					if (keyword.replace(/end_?/, "") !== start.keyword) {
-						root.content = replaceAt(
-							root.content,
-							start.id,
-							start.index,
-							start.length,
-						);
-						i += start.id.length - start.length;
+          if (!start) {
+            throw new Error(
+              `No opening statement found for closing statement "{% ${statement} %}".`,
+            );
+          }
 
-						start = undefined;
-						continue;
-					}
-				}
+          if (keyword.replace("end", "") !== start.keyword) {
+            root.content = replaceAt(
+              root.content,
+              start.id,
+              start.index,
+              start.length,
+            );
+            i += start.id.length - start.length;
 
-				const end = {
-					...node,
-					index: match.index + i,
-					type: "statement",
-					content: statement,
-					keyword,
-					delimiter,
-				} as Statement;
-				root.nodes[end.id] = end;
+            start = undefined;
+          }
+        }
 
-				const originalText = root.content.slice(
-					start.index,
-					end.index + end.length,
-				);
-				const block = {
-					id: generatePlaceholder(),
-					type: "block",
-					start: start,
-					end: end,
-					content: originalText.slice(
-						start.length,
-						originalText.length - end.length,
-					),
-					preNewLines: start.preNewLines,
-					containsNewLines: originalText.search("\n") !== NOT_FOUND,
-					originalText,
-					index: start.index,
-					length: end.index + end.length - start.index,
-					nodes: root.nodes,
-				} as Block;
-				root.nodes[block.id] = block;
+        const end = {
+          ...node,
+          index: match.index + i,
+          type: "statement",
+          content: statement,
+          keyword,
+          delimiter,
+        } as Statement;
 
-				root.content = replaceAt(
-					root.content,
-					block.id,
-					start.index,
-					originalText.length,
-				);
+        root.nodes[end.id] = end;
 
-				i += match.index + block.id.length + end.length - originalText.length;
-			} else {
-				root.nodes[node.id] = {
-					...node,
-					type: "statement",
-					content: statement,
-					keyword,
-					delimiter,
-				} as Statement;
-				statementStack.push(root.nodes[placeholder] as Statement);
+        const originalText = root.content.slice(
+          start.index,
+          end.index + end.length,
+        );
 
-				i += match.index + matchLength;
-			}
-		}
-	}
+        const block = {
+          id: generatePlaceholder(),
+          type: "block",
+          start: start,
+          end: end,
+          content: originalText.slice(
+            start.length,
+            originalText.length - end.length,
+          ),
+          preNewLines: start.preNewLines,
+          containsNewLines: originalText.search("\n") !== NOT_FOUND,
+          originalText,
+          index: start.index,
+          length: end.index + end.length - start.index,
+          nodes: root.nodes,
+        } as Block;
 
-	for (const stmt of statementStack) {
-		root.content = root.content.replace(stmt.originalText, stmt.id);
-	}
+        root.nodes[block.id] = block;
 
-	return root;
-};
+        root.content = replaceAt(
+          root.content,
+          block.id,
+          start.index,
+          originalText.length,
+        );
 
-const placeholderGenerator = (text: string) => {
-	let id = 0;
+        i += match.index + block.id.length + end.length - originalText.length;
+      } else {
+        root.nodes[node.id] = {
+          ...node,
+          type: "statement",
+          content: statement,
+          keyword,
+          delimiter,
+        } as Statement;
 
-	return (): string => {
-		while (true) {
-			id++;
+        statementStack.push(root.nodes[placeholder] as Statement);
 
-			const placeholder = Placeholder.startToken + id + Placeholder.endToken;
-			if (!text.includes(placeholder)) {
-				return placeholder;
-			}
-		}
-	};
-};
+        i += match.index + matchLength;
+      }
+    }
+  }
 
-const replaceAt = (
-	str: string,
-	replacement: string,
-	start: number,
-	length: number,
-): string => {
-	return str.slice(0, start) + replacement + str.slice(start + length);
+  for (const stmt of statementStack) {
+    root.content = root.content.replace(stmt.originalText, stmt.id);
+  }
+
+  return root;
 };
