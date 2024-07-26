@@ -1,44 +1,39 @@
-import { existsSync, readdirSync, readFileSync } from "fs";
+import { readdirSync, readFileSync } from "fs";
 import { join } from "path";
-import { format, Options } from "prettier";
-import * as jinjaPlugin from "../src/index";
+import { format } from "prettier/standalone";
 
-const prettify = (code: string, options: Options) =>
-	format(code, {
-		parser: "jinja-template",
-		plugins: [jinjaPlugin],
-		...options,
+import { plugin, PLUGIN_KEY } from "../src";
+
+describe("plugins", () => {
+
+	const formated = (input: string) => format(input, {
+		parser: PLUGIN_KEY,
+		plugins: [plugin]
 	});
 
-const testFolder = join(__dirname, "cases");
-const tests = readdirSync(testFolder);
+	describe("valid", () => {
+		const validCaseFolder = join(__dirname, "cases");
+		const tests = readdirSync(validCaseFolder).filter((f) => f.endsWith(".jinja"));
 
-tests.forEach((test) => {
-	if (test.startsWith("_")) {
-		return;
-	}
-	return it(test, async () => {
-		const path = join(testFolder, test);
-		const input = readFileSync(join(path, "input.html")).toString();
-		const expected = readFileSync(join(path, "expected.html")).toString();
+		it.each(tests)("should json jinja: %s be valid", async (test) => {
+			const testPath = join(validCaseFolder, test);
+			const input = readFileSync(testPath).toString();
 
-		const configPath = join(path, "config.json");
-		const configString =
-			existsSync(configPath) && readFileSync(configPath)?.toString();
-		const configObject = configString ? JSON.parse(configString) : {};
+			expect(await formated(input)).toMatchSnapshot(test);
+		});
+	});
 
-		const format = () => prettify(input, configObject);
+	describe("broken", () => {
 
-		const expectedError = expected.match(/Error\(["'`](?<message>.*)["'`]\)/)
-			?.groups?.message;
+		const brokenNotOpenStatementFolder = join(__dirname, "cases", "broken_not_open_statement");
+		const testsBroken = readdirSync(brokenNotOpenStatementFolder).filter((f) => f.endsWith(".jinja"));
 
-		if (expectedError) {
-			jest.spyOn(console, "error").mockImplementation(() => {});
-			await expect(format()).rejects.toThrow(expectedError);
-		} else {
-			const result = await format();
-			expect(result).toEqual(expected);
-			expect(await prettify(result, configObject)).toEqual(expected);
-		}
+		it.each(testsBroken)("should json jinja: %s be broken_not_open_statement", async (test) => {
+			const testPath = join(brokenNotOpenStatementFolder, test);
+			const input = readFileSync(testPath).toString();
+
+			await expect(() => formated(input)).rejects.toThrow(/No opening statement found for closing statement "(.*)"/);
+		});
+
 	});
 });

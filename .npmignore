@@ -1,0 +1,17 @@
+node_modules/
+src/
+.github/
+.yarn/
+test/
+
+__*
+.prettierignore
+.prettierrc
+.yarnrc.yml
+yarn.lock
+babel.config.js
+eslint.config.mjs
+jest.config.js
+rollup.config.mjs
+tsconfig.json
+.gitignore
