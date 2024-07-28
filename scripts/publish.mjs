@@ -21,9 +21,7 @@ const isHaveVersionOnNpm = (version) => {
 function publishPackage(version) {
 
 	if (isHaveVersionOnNpm(version)) {
-		logError(`version '${version}' have package on npm: `);
-
-		return exit(SUCCESS);
+		logError(`version '${version}' have package on npm.`);
 	}
 
 	log(execCommand(`npm publish ./dist/ --access public`));
@@ -32,21 +30,11 @@ function publishPackage(version) {
 
 // Create a git tag
 function createGitTag(version) {
-	const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
-	const GITHUB_REPOSITORY = process.env.GITHUB_REPOSITORY;
-	const GITHUB_ACTOR = process.env.GITHUB_ACTOR;
 
-	if (!GITHUB_TOKEN || !GITHUB_REPOSITORY || !GITHUB_ACTOR) {
-		logError(
-			"One or more required environment variables are not set (GITHUB_TOKEN, GITHUB_REPOSITORY, GITHUB_ACTOR)"
-		);
-		return exit(ERROR);
-	}
+	const tag = `v${version}`;
 
-	log(execCommand(`git tag v${version}`));
-	log(execCommand(
-		`git push https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git --tags`
-	));
+	log(execCommand(`git tag ${tag}`));
+	log(execCommand(`git push origin ${tag}`));
 }
 
 
@@ -59,7 +47,7 @@ async function createGitHubRelease(version) {
 
 	if (!GITHUB_TOKEN || !GITHUB_REPOSITORY) {
 		logError(
-			"One or more required environment variables are not set (GITHUB_TOKEN, GITHUB_REPOSITORY)"
+			"one or more required environment variables are not set (GITHUB_TOKEN, GITHUB_REPOSITORY)"
 		);
 		return exit(ERROR);
 	}
@@ -85,11 +73,11 @@ async function createGitHubRelease(version) {
 	);
 
 	if (!response.ok) {
-		logError(`Failed to create GitHub release: ${response.statusText}`);
+		logError(`failed to create GitHub release: ${response.statusText}`);
 		return exit(ERROR);
 	}
 
-	log(`GitHub release for version ${version} created successfully.`);
+	log(`gitHub release for version ${version} created successfully.`);
 }
 
 // Main function to run the release steps
@@ -102,7 +90,7 @@ async function release() {
 			log(`❗❗️Version of package is on prerelease: ${version}`);
 			return exit(SUCCESS);
 		}
-		
+
 		createGitTag(version);
 		await createGitHubRelease(version);
 	} catch (error) {
