@@ -1,4 +1,4 @@
-import { AstPath, Doc, Printer } from "prettier";
+import type { AstPath, Doc, Printer } from "prettier";
 import { builders, utils } from "prettier/doc";
 import { Block, Expression, Node, Statement } from "./types";
 import { NOT_FOUND } from "./constants";

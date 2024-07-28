@@ -1,13 +1,13 @@
-name: "🍏 publish"
+name: "🤖 check points"
 
 on:
-  push:
+  pull_request:
     branches:
       - master
 
 jobs:
-  release:
-    name: "🍏 publish"
+  checkpoints:
+    name: "check your pr"
     runs-on: ubuntu-latest
     steps:
       - name: "Checkout repository"
@@ -30,8 +30,3 @@ jobs:
 
       - name: "🏡 Build project"
         run: yarn build
-
-      - name: "🚀 Publish to npm"
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
-        run: yarn publish

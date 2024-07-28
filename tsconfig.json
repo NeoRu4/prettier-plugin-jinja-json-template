@@ -1,27 +1,31 @@
 {
   "compilerOptions": {
-    "outDir": "./lib",
     "target": "esnext",
     "moduleResolution": "node",
     "module": "esnext",
     "lib": [
-      "esnext",
+      "esnext"
     ],
-    "declaration": true,
+    "declaration": false,
+    "emitDeclarationOnly": true,
     "strictNullChecks": true,
     "strict": true,
     "resolveJsonModule": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
-    "typeRoots": ["src/typing/typing", "./node_modules/@types"],
+    "typeRoots": [
+      "src/typing/typing",
+      "./node_modules/@types"
+    ]
   },
   "include": [
     "src/**/*"
   ],
   "exclude": [
     "lib",
+    "dist",
     "node_modules",
     "test",
-    "*.test.*",
+    "*.test.*"
   ]
 }

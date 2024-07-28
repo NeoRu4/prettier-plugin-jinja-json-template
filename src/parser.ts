@@ -1,5 +1,5 @@
-import { Parser } from "prettier";
-import { Block, Expression, Node, Statement } from "./types";
+import type { Parser } from "prettier";
+import type { Block, Expression, Node, Statement } from "./types";
 import { placeholderGenerator, replaceAt } from "./utils/placeholder-generator";
 import { NOT_FOUND } from "./constants";
 

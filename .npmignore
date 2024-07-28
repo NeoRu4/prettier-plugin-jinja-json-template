@@ -3,15 +3,18 @@ src/
 .github/
 .yarn/
 test/
+scripts/
+.idea/
 
 __*
 .prettierignore
 .prettierrc
 .yarnrc.yml
+.gitignore
+.npmrc
 yarn.lock
 babel.config.js
 eslint.config.mjs
 jest.config.js
 rollup.config.mjs
 tsconfig.json
-.gitignore
