@@ -1,7 +1,7 @@
 import semver from "semver";
 
 import fetch from "node-fetch";
-import { ERROR, execCommand, exit, getPackage, SUCCESS, log, logError } from "./utils";
+import { ERROR, execCommand, exit, getPackage, log, logError, SUCCESS } from "./utils";
 
 const packageJson = getPackage();
 
@@ -23,20 +23,10 @@ function publishPackage(version) {
 	if (isHaveVersionOnNpm(version)) {
 		logError(`version '${version}' have package on npm: `);
 
-		return exit(ERROR);
-	}
-
-	const publish = () => log(execCommand(`npm publish ./dist/ --access public`));
-
-	if (semver.prerelease(version)) {
-		log(`❗❗️Version of package is on prerelease: ${version}`);
-		publish();
-
 		return exit(SUCCESS);
 	}
 
-	publish();
-
+	log(execCommand(`npm publish ./dist/ --access public`));
 }
 
 
@@ -60,7 +50,8 @@ function createGitTag(version) {
 }
 
 
-const getReleaseText = (version) => `Release of version ${version}\n\`npm i -D prettier-plugin-jinja-json-template@${version}\`\n\`yarn add -D prettier-plugin-jinja-json-template@${version}\``
+const getReleaseText = (version) => `Release of version ${version}\n\`npm i -D prettier-plugin-jinja-json-template@${version}\`\n\`yarn add -D prettier-plugin-jinja-json-template@${version}\``;
+
 // Create a GitHub release
 async function createGitHubRelease(version) {
 	const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
@@ -106,6 +97,12 @@ async function release() {
 	try {
 		const version = packageJson.version;
 		publishPackage(version);
+
+		if (semver.prerelease(version)) {
+			log(`❗❗️Version of package is on prerelease: ${version}`);
+			return exit(SUCCESS);
+		}
+		
 		createGitTag(version);
 		await createGitHubRelease(version);
 	} catch (error) {
