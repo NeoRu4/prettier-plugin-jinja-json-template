@@ -4,6 +4,21 @@ Formatter plugin for jinja2 json template files.
 
 Jinja2 + json would be another one an approach
 
+How to use with prettier standalone:
+```typescript
+
+import { format } from 'prettier/standalone';
+import { plugin, PLUGIN_KEY } from 'prettier-plugin-jinja-json-template';
+
+export const formatJinjaJson = async (code: string) => {
+  return await format(code, {
+    parser: PLUGIN_KEY,
+    plugins: [plugin],
+  });
+};
+
+```
+
 ## Install
 
 ```bash

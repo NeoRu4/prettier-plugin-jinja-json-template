@@ -22,6 +22,7 @@ function publishPackage(version) {
 
 	if (isHaveVersionOnNpm(version)) {
 		logError(`version '${version}' have package on npm.`);
+		return
 	}
 
 	log(execCommand(`npm publish ./dist/ --access public`));
