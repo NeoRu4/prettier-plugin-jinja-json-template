@@ -22,7 +22,10 @@ export const formatJinjaJson = async (code: string) => {
 ## Install
 
 ```bash
-npm install --save-dev prettier prettier-plugin-jinja-template
+npm install --save-dev prettier prettier-plugin-jinja-json-template
+```
+```bash
+yarn add -D prettier prettier-plugin-jinja-json-template
 ```
 
 Add the plugin to your `.prettierrc`:
@@ -48,18 +51,13 @@ To format basic .json files, you'll have to override the used parser inside your
 }
 ```
 
-Run it on all json files in your project:
+Run it on all json jinja files in your project:
 ```bash
-npx prettier --write **/*.json
+npx prettier "**/*.json.jinja" --write
 ```
 
 If you don't have a prettier config you can run the plugin with this command:
 ```bash
-npx prettier --plugin=prettier-plugin-jinja-json-template --parser=jinja-template --write **/*.json
+npx prettier "**/*.json.jinja" --plugin=prettier-plugin-jinja-json-template --parser=jinja-json-template --write 
 ```
-
-
-## Options
-
-This Plugin provides additional options:
 
