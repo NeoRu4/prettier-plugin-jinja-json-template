@@ -1,6 +1,6 @@
 {
   "name": "prettier-plugin-jinja-json-template",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Prettier plugin for formatting jinja json templates.",
   "author": "David Odenwald, Bystray Stepan",
   "license": "MIT",
@@ -21,7 +21,7 @@
     "jinja2",
     "flask"
   ],
-  "main": "index.сjs",
+  "main": "index.cjs",
   "module": "index.esm.js",
   "types": "index.d.ts",
   "source": "src/index.ts",
